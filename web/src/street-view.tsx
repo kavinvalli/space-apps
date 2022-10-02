@@ -178,7 +178,7 @@ export function StreetView({
     <motion.div
       className="street-view-wrapper"
       layoutId="box"
-      data-intro="Street view something something"
+      data-intro="View the street view of the nearest street available on Google Earth and view where and when ISS will pass through"
       data-title="Street view"
       data-step="5"
       initial={false}

@@ -9,8 +9,8 @@ export default function Timeline({
   return (
     <div
       className="timeline"
-      data-title="Historical view"
-      data-intro="This allows you to do xyz"
+      data-title="Historical Timeline"
+      data-intro="Show different models fo the ISS over the course of the years"
       data-step="2"
       data-position="left"
     >
@@ -18,7 +18,7 @@ export default function Timeline({
         {number}
       </div>
       <input
-        data-intro="You can drag this and see the changes happen to ISS model"
+        data-intro="Sliding this switches the ISS model and shows you it's past structures"
         data-disable-interaction="false"
         type="range"
         min="1984"

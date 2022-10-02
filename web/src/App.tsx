@@ -215,8 +215,11 @@ export default function App() {
     const interval = setInterval(() => {
       const node = document.querySelector('.cesium-animation-shuttleRingBack');
       if (node) {
-        node.setAttribute('data-intro', 'something something');
-        node.setAttribute('data-title', 'something else');
+        node.setAttribute(
+          'data-intro',
+          'Update the speed with which you view the trajectory of the ISS'
+        );
+        node.setAttribute('data-title', 'Speedometer');
         node.setAttribute('data-step', '4');
         node.setAttribute('data-position', 'top');
 
