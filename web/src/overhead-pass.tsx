@@ -1,7 +1,7 @@
 // const worker = new Worker(new URL("./pool-worker.js", import.meta.url), {
 //   type: "module",
 // });
-import Worker from "./pool-worker?worker";
+// import Worker from "./pool-worker?worker";
 
 // worker.addEventListener("message", (e) => {
 //   console.log("RECEIVED", e.data);
@@ -12,7 +12,7 @@ import Worker from "./pool-worker?worker";
 import * as mod from "../../wasm/pkg";
 import Cartesian3 from "cesium/Source/Core/Cartesian3";
 import * as satellite from "satellite.js";
-const worker = new Worker();
+// const worker = new Worker();
 
 function calculatePosition(satrec: any, jsDate = new Date()) {
   const positionAndVelocity = satellite.propagate(satrec, jsDate);

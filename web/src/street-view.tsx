@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef, useMemo, useCallback } from "react";
-import { JulianDate } from "cesium";
-import { motion, AnimatePresence } from "framer-motion";
-import * as Cesium from "cesium";
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import { JulianDate } from 'cesium';
+import { motion, AnimatePresence } from 'framer-motion';
+import * as Cesium from 'cesium';
 
 export function StreetView({
   location: loc,
@@ -18,7 +18,7 @@ export function StreetView({
 }) {
   const dockRef = useRef<HTMLDivElement>(null);
   const skyRef = useRef<HTMLDivElement>(null);
-  const [view, setView] = useState<"minimized" | "full">("full");
+  const [view, setView] = useState<'minimized' | 'full'>('full');
   const modifyTarget = useCallback(
     (target: number) => {
       const containerRect = containerRef.current!.getBoundingClientRect();
@@ -57,10 +57,10 @@ export function StreetView({
     if (!pano) return;
 
     // document.getElementById("streetView").style.display = "block";
-    overlayRef.current!.style.display = "block";
+    overlayRef.current!.style.display = 'block';
     // document.getElementById("streetViewUi").style.display = "block";
     const overlayCanvas = overlayRef.current!;
-    const ctx = overlayCanvas.getContext("2d")!;
+    const ctx = overlayCanvas.getContext('2d')!;
 
     let width = (overlayCanvas.width = overlayCanvas.offsetWidth);
     let height = (overlayCanvas.height = overlayCanvas.offsetHeight);
@@ -76,8 +76,8 @@ export function StreetView({
       new JulianDate()
     );
     planetarium = S.virtualsky({
-      id: "virtualSky",
-      projection: "gnomic",
+      id: 'virtualSky',
+      projection: 'gnomic',
       ground: true,
       latitude: loc.latitude,
       longitude: loc.longitude,
@@ -99,11 +99,11 @@ export function StreetView({
     planetarium.grid.az = false;
     planetarium.gradient = false;
     planetarium.transparent = true;
-    planetarium.col.constellation = "rgba(180,180,255,0.4)";
+    planetarium.col.constellation = 'rgba(180,180,255,0.4)';
     planetarium.scalestars = 1.2;
     planetarium.cardinalpoints = false;
 
-    console.log("drawn");
+    console.log('drawn');
     planetarium.draw();
 
     const onChange = () => {
@@ -132,15 +132,6 @@ export function StreetView({
         new JulianDate()
       );
       planetarium.updateClock(Cesium.JulianDate.toDate(currentTime));
-      // for (let transit of selectedTransitGroup.transits) {
-      //   let satIndex = transit.sat;
-      //   if (
-      //     Cesium.JulianDate.compare(currentTime, transit.start) < 0 ||
-      //     Cesium.JulianDate.compare(currentTime, transit.end) > 0
-      //   ) {
-      //     continue;
-      //   }
-      //   let satPosition = positionProperties[satIndex].getValue(currentTime);
       let local = Cesium.Matrix4.multiplyByPoint(
         inverseTransform,
         new Cesium.Cartesian3(),
@@ -152,31 +143,31 @@ export function StreetView({
       heading = Math.PI / 2 - Math.atan2(local.y, local.x);
       let { x, y } = planetarium.azel2xy(heading, pitch);
       // if (x == -1 && y == -1) continue;
-      const name = "ISS (ZARYA)";
+      const name = 'ISS (ZARYA)';
       // let name = allSats[satIndex].name;
-      ctx.font = "18px sans-serif";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+      ctx.font = '18px sans-serif';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
       ctx.fillRect(x + 10, y - 15, ctx.measureText(name).width + 10, 25);
-      ctx.fillStyle = "white";
-      ctx.strokeStyle = "black";
+      ctx.fillStyle = 'white';
+      ctx.strokeStyle = 'black';
       ctx.lineWidth = 0.5;
       ctx.fillText(name, x + 15, y);
       ctx.strokeText(name, x + 15, y);
       ctx.beginPath();
       ctx.arc(x, y, 1.2, 0, Math.PI * 2);
-      ctx.fillStyle = "white";
+      ctx.fillStyle = 'white';
       ctx.fill();
       // }
 
       planetarium.drawImmediate();
 
-      listeners.push(pano.addListener("zoom_changed", onChange));
-      listeners.push(pano.addListener("pov_changed", onChange));
+      listeners.push(pano.addListener('zoom_changed', onChange));
+      listeners.push(pano.addListener('pov_changed', onChange));
 
       return () => {
         for (const listener in listeners) {
-          listeners.remove(listener);
+          listeners.pop();
         }
       };
       // loopCount++
@@ -187,6 +178,9 @@ export function StreetView({
     <motion.div
       className="street-view-wrapper"
       layoutId="box"
+      data-intro="Street view something something"
+      data-title="Street view"
+      data-step="5"
       initial={false}
       dragTransition={{
         modifyTarget,
@@ -196,56 +190,68 @@ export function StreetView({
         timeConstant: 250,
       }}
       variants={{
-        minimized: { height: "25vh", borderRadius: "10px" },
-        full: { height: "70vh", borderRadius: "5px" },
+        minimized: { height: '25vh', borderRadius: '10px' },
+        full: { height: '70vh', borderRadius: '5px' },
       }}
       animate={view}
       ref={dockRef}
-      drag={view === "minimized"}
+      drag={view === 'minimized'}
       dragConstraints={containerRef}
       dragElastic={0}
       layout
     >
-      <button
-        style={{
-          padding: "12px 8px",
-          backgroundColor: "#0A202D",
-          color: "#efefef",
-          fontSize: "20px",
-          border: 0,
-        }}
-        onClick={() => setView(view === "minimized" ? "full" : "minimized")}
-      >
-        Switch
-      </button>
       <div
         style={{
-          borderRadius: "22px",
-          backgroundColor: "#1A506B",
-          position: "relative",
-          height: "100%",
-          width: "100%",
-          padding: "20px",
+          borderRadius: '22px',
+          backgroundColor: '#1A506B',
+          position: 'relative',
+          height: '100%',
+          width: '100%',
+          padding: '12px',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
-        <div style={{ position: "relative", height: "100%", width: "100%" }}>
+        <button
+          data-intro="Minimize and drag around"
+          style={{
+            padding: '10px 8px',
+            backgroundColor: '#0A202D',
+            color: '#efefef',
+            fontSize: '18px',
+            border: 0,
+            width: '100%',
+            borderRadius: '12px 12px 0 0',
+            marginBottom: '4px',
+          }}
+          onClick={() => setView(view === 'minimized' ? 'full' : 'minimized')}
+        >
+          Switch
+        </button>
+        <div
+          style={{
+            position: 'relative',
+            flex: 1,
+            width: '100%',
+          }}
+        >
           <div
             style={{
-              position: "absolute",
-              top: "25px",
-              left: "25px",
+              position: 'absolute',
+              top: '25px',
+              left: '25px',
               zIndex: 10000,
-              color: "white",
+              color: 'white',
             }}
           >
-            <div style={{ fontFamily: "monospace" }}>
+            <div style={{ fontFamily: 'monospace' }}>
               {new Date().toDateString()}
             </div>
             <h3
               style={{
-                fontFamily: "monospace !important",
-                fontSize: "24px",
-                marginBottom: "5px",
+                fontFamily: 'Polaris !important',
+                fontSize: '24px',
+                marginBottom: '5px',
               }}
             >
               STREET VIEW
@@ -254,14 +260,14 @@ export function StreetView({
           </div>
           <div
             style={{
-              display: "block",
-              backgroundColor: "rgb(229, 227, 223)",
-              overflow: "hidden",
-              position: "absolute",
-              height: "100%",
-              borderRadius: "12px",
-              width: "100%",
-              pointerEvents: view === "minimized" ? "none" : "all",
+              display: 'block',
+              backgroundColor: 'rgb(229, 227, 223)',
+              overflow: 'hidden',
+              position: 'absolute',
+              height: '100%',
+              borderRadius: '0 0 12px 12px',
+              width: '100%',
+              pointerEvents: view === 'minimized' ? 'none' : 'all',
             }}
             ref={streetViewRef}
           ></div>
@@ -270,28 +276,28 @@ export function StreetView({
             className="streetView"
             id="virtualSky"
             style={{
-              zIndex: "97",
-              fontSize: "12px",
-              borderRadius: "12px",
-              pointerEvents: "none",
-              position: "relative",
-              height: "100%",
-              width: "100%",
+              zIndex: '97',
+              fontSize: '12px',
+              borderRadius: '12px',
+              pointerEvents: 'none',
+              position: 'relative',
+              height: '100%',
+              width: '100%',
             }}
           ></div>
           <canvas
             ref={overlayRef}
             className="streetView"
             style={{
-              position: "absolute",
-              borderRadius: "12px",
-              width: "100%",
-              height: "100%",
-              left: "0",
-              top: "0",
-              display: "block",
-              zIndex: "98",
-              pointerEvents: "none",
+              position: 'absolute',
+              borderRadius: '12px',
+              width: '100%',
+              height: '100%',
+              left: '0',
+              top: '0',
+              display: 'block',
+              zIndex: '98',
+              pointerEvents: 'none',
             }}
           ></canvas>
         </div>

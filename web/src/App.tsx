@@ -5,7 +5,7 @@ import {
   CesiumComponentRef,
   GeoJsonDataSource,
   PathGraphics,
-} from "resium";
+} from 'resium';
 import {
   PolylineGlowMaterialProperty,
   Cartesian3,
@@ -22,18 +22,19 @@ import {
   Credit,
   SampledPositionProperty,
   ClockRange,
-} from "cesium";
-import * as mod from "../../wasm/pkg";
-import * as satellite from "satellite.js";
-import { useLocation } from "./geolocation";
-import { useEffect, useState, useRef, Ref, RefObject } from "react";
+} from 'cesium';
+import * as mod from '../../wasm/pkg';
+import * as satellite from 'satellite.js';
+import { useLocation } from './geolocation';
+import { useEffect, useState, useRef, Ref, RefObject } from 'react';
 
-import { ArcGisMapServerImageryProvider } from "cesium";
-import { ImageryLayer } from "resium";
-import { StreetView } from "./street-view";
-import { streetViewService } from "./street-view-service";
+import { ArcGisMapServerImageryProvider } from 'cesium';
+import { ImageryLayer } from 'resium';
+import { StreetView } from './street-view';
+import { streetViewService } from './street-view-service';
 // import {} from "./overhead-pass";
-import Timeline from "./Timeline";
+import Timeline from './Timeline';
+import introJs from 'intro.js';
 // import issModel from "../public/iss.glb";
 
 // const ISS_TLE = `1 25544U 98067A   22273.72802950  .00014755  00000+0  26205-3 0  9998
@@ -62,7 +63,7 @@ const calcPos = (satrec: satellite.SatRec, date = new Date()) => {
       date.getUTCMilliseconds()
     )
   );
-  if (typeof positionAndVelocity.position === "boolean") return;
+  if (typeof positionAndVelocity.position === 'boolean') return;
 
   // const positionEcf = satellite.eciToEcf(positionAndVelocity.position, gmst);
   const position = mod.eci_to_geodetic(
@@ -78,7 +79,7 @@ const calcPos = (satrec: satellite.SatRec, date = new Date()) => {
 };
 
 Ion.defaultAccessToken =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIyNDBiYTUyNC1kZjI5LTRiNDQtYTZmZi0xZGM1OTE3Y2ZiYTQiLCJpZCI6MTA5ODE5LCJpYXQiOjE2NjQ1OTQ4Njd9.6EaeFnjcD1xLCaqi8MdlinlBrGzZLu2Wfl4LJvgnZtg";
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIyNDBiYTUyNC1kZjI5LTRiNDQtYTZmZi0xZGM1OTE3Y2ZiYTQiLCJpZCI6MTA5ODE5LCJpYXQiOjE2NjQ1OTQ4Njd9.6EaeFnjcD1xLCaqi8MdlinlBrGzZLu2Wfl4LJvgnZtg';
 
 interface Pos {
   longitude: number;
@@ -87,10 +88,10 @@ interface Pos {
 }
 
 const imageryProvider = new UrlTemplateImageryProvider({
-  url: "third-party/OpenMapTiles-Satellite/{z}/{x}/{y}.jpg",
+  url: 'third-party/OpenMapTiles-Satellite/{z}/{x}/{y}.jpg',
   maximumLevel: 5,
   credit: new Credit(
-    "<span style=vertical-align:sub>© MapTiler © OpenStreetMap contributors</span>",
+    '<span style=vertical-align:sub>© MapTiler © OpenStreetMap contributors</span>',
     true
   ),
 });
@@ -101,13 +102,6 @@ export default function App() {
   const [panoData, setPanoData] = useState(null);
   const [streetViewOpen, setStreetViewOpen] = useState(true);
   const [position, setPosition] = useState<SampledPositionProperty>();
-  // const positionCartesian =
-  //   position &&
-  //   Cartesian3.fromDegrees(
-  //     position?.longitude,
-  //     position?.latitude,
-  //     position.height * 1000
-  //   );
   const viewerRef = useRef<CesiumComponentRef<ViewerBase>>(null);
   const issRef = useRef<CesiumComponentRef<EntityBase>>(null);
   const [start, setStart] = useState<JulianDate>();
@@ -117,13 +111,11 @@ export default function App() {
   useEffect(() => {
     if (viewerRef.current?.cesiumElement) {
       viewerRef.current.cesiumElement.scene.globe.enableLighting = true;
-      // viewerRef.current.cesiumElement.shadows = true;
-      // viewerRef.current.cesiumElement.imageryProvider = imageryProvider;
     }
   }, []);
 
   useEffect(() => {
-    const tles = ISS_TLE.split("\n").map((line) => line.trim());
+    const tles = ISS_TLE.split('\n').map(line => line.trim());
     const satrec = satellite.twoline2satrec(tles[0], tles[1]);
     // let date = JulianDate.toDate;
     // let date = new Date();
@@ -137,7 +129,7 @@ export default function App() {
 
     const positionsOverTime = new SampledPositionProperty();
     if (viewerRef.current?.cesiumElement) {
-      console.log("executing stuff");
+      console.log('executing stuff');
       viewerRef.current.cesiumElement.clock.startTime = start.clone();
       viewerRef.current.cesiumElement.clock.stopTime = stop.clone();
       viewerRef.current.cesiumElement.clock.currentTime = start.clone();
@@ -145,12 +137,6 @@ export default function App() {
       viewerRef.current.cesiumElement.clock.multiplier = 40;
       viewerRef.current.cesiumElement.clock.clockRange = ClockRange.LOOP_STOP;
       viewerRef.current.cesiumElement.clock.tick();
-      // if (positionCartesian) {
-      //   console.log(positionCartesian);
-      //   viewerRef.current.cesiumElement.camera.flyTo({
-      //     destination: positionCartesian,
-      //   });
-      // }
     }
 
     for (let i = 0; i < totalSeconds; i += timestepInSeconds) {
@@ -168,7 +154,7 @@ export default function App() {
           jsDate.getUTCMilliseconds()
         )
       );
-      if (typeof positionAndVelocity.position === "boolean") return;
+      if (typeof positionAndVelocity.position === 'boolean') return;
       const p = mod.eci_to_geodetic(
         new (mod.EciVec as any)(
           positionAndVelocity.position.x,
@@ -188,22 +174,10 @@ export default function App() {
     }
     setPosition(positionsOverTime);
 
-    // function updateISSPointer() {
-    //   // setTimeout(() => {
-    //   if (issRef.current?.cesiumElement?.position) {
-    //     const position = calcPos(satrec, new Date())!;
-    //     issRef.current.cesiumElement.position = Cartesian3.fromDegrees(
-    //       mod.degrees_lon(position.longitude),
-    //       mod.degrees_lat(position.latitude),
-    //       position.height * 1000
-    //     ) as any;
-    //   }
-
-    //   requestAnimationFrame(updateISSPointer);
-    //   // }, 2000);
-    // }
-
-    // requestAnimationFrame(updateISSPointer);
+    const pos = positionsOverTime.getValue(JulianDate.fromDate(new Date()));
+    viewerRef.current?.cesiumElement?.camera.flyTo({
+      destination: new Cartesian3(pos!.x, pos!.y, pos!.z * 2000)!,
+    });
   }, []);
 
   useEffect(() => {
@@ -223,8 +197,62 @@ export default function App() {
     );
   }, [location]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const node = document.querySelector('.cesium-animation-buttonPath');
+      if (node) {
+        node.dispatchEvent(new Event('click'));
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const node = document.querySelector('.cesium-animation-shuttleRingBack');
+      if (node) {
+        node.setAttribute('data-intro', 'something something');
+        node.setAttribute('data-title', 'something else');
+        node.setAttribute('data-step', '4');
+        node.setAttribute('data-position', 'top');
+
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+
   return (
-    <div ref={containerRef}>
+    <div
+      ref={containerRef}
+      data-intro="3d Viewer"
+      data-title="Hello"
+      data-step="1"
+    >
+      <button
+        style={{
+          padding: '12px 8px',
+          backgroundColor: '#F2BF40',
+          color: '#efefef',
+          fontSize: '20px',
+          border: 0,
+          position: 'absolute',
+          right: 0,
+          bottom: 0,
+          zIndex: '1000',
+        }}
+        onClick={() => introJs().start()}
+        // onClick={() => setView(view === 'minimized' ? 'full' : 'minimized')}
+      >
+        Show Tutorial
+      </button>
       {streetViewOpen && (
         <StreetView
           containerRef={containerRef}
@@ -237,23 +265,23 @@ export default function App() {
       <Viewer
         full
         ref={viewerRef}
-        style={{ position: "relative", height: "100vh" }}
+        style={{ position: 'relative', height: '100vh' }}
       >
         {location && (
           <GeoJsonDataSource
             data={{
-              type: "Feature",
+              type: 'Feature',
               geometry: {
-                type: "Point",
+                type: '',
                 coordinates: [location?.longitude, location?.latitude],
               },
             }}
-            onLoad={(dataSource) => {
-              dataSource.entities.values.forEach((e) => {
+            onLoad={dataSource => {
+              dataSource.entities.values.forEach(e => {
                 // @ts-ignore
                 e.billboard = null;
                 // @ts-ignore
-                e.point = { color: Color.YELLOW, pixelSize: 10 };
+                e.point = { color: Color.RED, pixelSize: 10 };
               });
             }}
           />
@@ -263,7 +291,7 @@ export default function App() {
         )}
       </Viewer>
       <Timeline
-        callback={(num) => {
+        callback={num => {
           console.log(num);
           setYear(num);
         }}
@@ -283,7 +311,7 @@ function ISS({
 }) {
   const [show, setShow] = useState(false);
   const [iss, setIss] = useState({
-    uri: "/iss.glb",
+    uri: '/iss.glb',
     minimumPixelSize: 3400,
     maximumScale: 8000,
   });
@@ -292,7 +320,7 @@ function ISS({
     setIss(
       year >= 1984 && year < 1997
         ? {
-            uri: "/zaryafinal.gltf",
+            uri: '/zaryafinal.gltf',
             minimumPixelSize: 1700,
             maximumScale: 80000,
           }
@@ -303,7 +331,7 @@ function ISS({
           //     maximumScale: 80000,
           //   }
           {
-            uri: "/zaryafinal.gltf",
+            uri: '/zaryafinal.gltf',
             minimumPixelSize: 1700,
             maximumScale: 80000,
           }
@@ -314,12 +342,12 @@ function ISS({
           //     maximumScale: 8000,
           //   }
           {
-            uri: "/iss.glb",
+            uri: '/iss.glb',
             minimumPixelSize: 3400,
             maximumScale: 8000,
           }
         : {
-            uri: "/iss.glb",
+            uri: '/iss.glb',
             minimumPixelSize: 3400,
             maximumScale: 8000,
           }
@@ -331,26 +359,26 @@ function ISS({
       {show && (
         <div
           style={{
-            padding: "14px 18px",
-            borderRadius: "15px",
-            position: "absolute",
+            padding: '14px 18px',
+            borderRadius: '15px',
+            position: 'absolute',
           }}
         >
           <div>
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "flex-start",
-                fontFamily: "monospace",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                fontFamily: 'monospace',
               }}
             >
               <span>{new Date().toDateString()}</span>
             </div>
-            <span style={{ fontFamily: "monospace", fontSize: "24px" }}>
-              ISS {"("}Zarya{")"}
+            <span style={{ fontFamily: 'monospace', fontSize: '24px' }}>
+              ISS {'('}Zarya{')'}
             </span>
-            <div style={{ fontFamily: "monospace", fontSize: "20px" }}>
+            <div style={{ fontFamily: 'monospace', fontSize: '20px' }}>
               Lorem ipsum, dolor sit amet consectetur adipisicing elit. Aut
               voluptatum sit veniam quo accusantium expedita, nisi nulla
               quisquam minima aliquid.
@@ -361,7 +389,7 @@ function ISS({
 
       <Entity
         name="iss"
-        onClick={(e) => {
+        onClick={e => {
           e.position;
           setShow(true);
           console.log(e);
@@ -372,11 +400,11 @@ function ISS({
         path={{
           leadTime: 1000,
           trailTime: 1500,
-          width: 10,
+          width: 6,
           resolution: 1,
           material: new PolylineGlowMaterialProperty({
             glowPower: 0.1,
-            color: Color.WHITE,
+            color: Color.DARKGRAY,
             taperPower: 1,
           }),
         }}
