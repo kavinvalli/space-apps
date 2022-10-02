@@ -235,8 +235,8 @@ export default function App() {
   return (
     <div
       ref={containerRef}
-      data-intro="3d Viewer"
-      data-title="Hello"
+      data-intro="This model shows you the accurate location of the ISS at all times and the trajectory and orbit it takes to get there"
+      data-title="Welcome to the Liberty"
       data-step="1"
     >
       <button

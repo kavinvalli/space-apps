@@ -263,7 +263,7 @@ export function StreetView({
               display: 'block',
               backgroundColor: 'rgb(229, 227, 223)',
               overflow: 'hidden',
-              position: 'absolute',
+              position: 'relative',
               height: '100%',
               borderRadius: '0 0 12px 12px',
               width: '100%',
@@ -280,7 +280,7 @@ export function StreetView({
               fontSize: '12px',
               borderRadius: '12px',
               pointerEvents: 'none',
-              position: 'relative',
+              position: 'absolute',
               height: '100%',
               width: '100%',
             }}
