@@ -4,8 +4,10 @@ import {
   ModelGraphics,
   CesiumComponentRef,
   GeoJsonDataSource,
+  PathGraphics,
 } from "resium";
 import {
+  PolylineGlowMaterialProperty,
   Cartesian3,
   Ion,
   Entity as EntityBase,
@@ -18,6 +20,8 @@ import {
   UrlTemplateImageryProvider,
   TileMapServiceImageryProvider,
   Credit,
+  SampledPositionProperty,
+  ClockRange,
 } from "cesium";
 import * as mod from "../../wasm/pkg";
 import * as satellite from "satellite.js";
@@ -26,6 +30,10 @@ import { useEffect, useState, useRef, Ref, RefObject } from "react";
 
 import { ArcGisMapServerImageryProvider } from "cesium";
 import { ImageryLayer } from "resium";
+import { StreetView } from "./street-view";
+import { streetViewService } from "./street-view-service";
+// import {} from "./overhead-pass";
+import Timeline from "./Timeline";
 // import issModel from "../public/iss.glb";
 
 // const ISS_TLE = `1 25544U 98067A   22273.72802950  .00014755  00000+0  26205-3 0  9998
@@ -33,6 +41,13 @@ import { ImageryLayer } from "resium";
 
 const ISS_TLE = `1 25544U 98067A   22274.19759479  .00014979  00000-0  26577-3 0  9998
 2 25544  51.6446 171.3620 0002537 314.8685 180.8010 15.50443271361628`;
+
+declare global {
+  interface Window {
+    google: any;
+    S: any;
+  }
+}
 
 const calcPos = (satrec: satellite.SatRec, date = new Date()) => {
   const positionAndVelocity = satellite.propagate(satrec, date);
@@ -81,22 +96,28 @@ const imageryProvider = new UrlTemplateImageryProvider({
 });
 
 export default function App() {
+  const containerRef = useRef(null);
   const location = useLocation();
-  const [position, setPosition] = useState<Pos>();
-  const positionCartesian =
-    position &&
-    Cartesian3.fromDegrees(
-      position?.longitude,
-      position?.latitude,
-      position.height * 150000
-    );
+  const [panoData, setPanoData] = useState(null);
+  const [streetViewOpen, setStreetViewOpen] = useState(true);
+  const [position, setPosition] = useState<SampledPositionProperty>();
+  // const positionCartesian =
+  //   position &&
+  //   Cartesian3.fromDegrees(
+  //     position?.longitude,
+  //     position?.latitude,
+  //     position.height * 1000
+  //   );
   const viewerRef = useRef<CesiumComponentRef<ViewerBase>>(null);
   const issRef = useRef<CesiumComponentRef<EntityBase>>(null);
+  const [start, setStart] = useState<JulianDate>();
+  const [stop, setStop] = useState<JulianDate>();
+  const [year, setYear] = useState<number>(2022);
 
   useEffect(() => {
     if (viewerRef.current?.cesiumElement) {
       viewerRef.current.cesiumElement.scene.globe.enableLighting = true;
-      viewerRef.current.cesiumElement.shadows = true;
+      // viewerRef.current.cesiumElement.shadows = true;
       // viewerRef.current.cesiumElement.imageryProvider = imageryProvider;
     }
   }, []);
@@ -105,95 +126,269 @@ export default function App() {
     const tles = ISS_TLE.split("\n").map((line) => line.trim());
     const satrec = satellite.twoline2satrec(tles[0], tles[1]);
     // let date = JulianDate.toDate;
-    let date = new Date();
-    const newPos = calcPos(satrec, date)!;
+    // let date = new Date();
+    // const newPos = calcPos(satrec, date)!;
 
-    const position = {
-      height: newPos.height,
-      latitude: mod.degrees_lat(newPos.latitude),
-      longitude: mod.degrees_lon(newPos.longitude),
-    };
+    const totalSeconds = 60 * 60 * 6;
+    const timestepInSeconds = 10;
 
+    const start = JulianDate.fromDate(new Date());
+    const stop = JulianDate.addSeconds(start, totalSeconds, new JulianDate());
+
+    const positionsOverTime = new SampledPositionProperty();
     if (viewerRef.current?.cesiumElement) {
-      if (positionCartesian) {
-        console.log(positionCartesian);
-        viewerRef.current.cesiumElement.camera.flyTo({
-          destination: positionCartesian,
-        });
-      }
-    }
-    setPosition(position);
-
-    function updateISSPointer() {
-      // setTimeout(() => {
-      if (issRef.current?.cesiumElement?.position) {
-        const position = calcPos(satrec, new Date())!;
-        issRef.current.cesiumElement.position = Cartesian3.fromDegrees(
-          mod.degrees_lon(position.longitude),
-          mod.degrees_lat(position.latitude),
-          position.height * 10000
-        ) as any;
-      }
-
-      requestAnimationFrame(updateISSPointer);
-      // }, 1000);
+      console.log("executing stuff");
+      viewerRef.current.cesiumElement.clock.startTime = start.clone();
+      viewerRef.current.cesiumElement.clock.stopTime = stop.clone();
+      viewerRef.current.cesiumElement.clock.currentTime = start.clone();
+      viewerRef.current.cesiumElement.timeline.zoomTo(start, stop);
+      viewerRef.current.cesiumElement.clock.multiplier = 40;
+      viewerRef.current.cesiumElement.clock.clockRange = ClockRange.LOOP_STOP;
+      viewerRef.current.cesiumElement.clock.tick();
+      // if (positionCartesian) {
+      //   console.log(positionCartesian);
+      //   viewerRef.current.cesiumElement.camera.flyTo({
+      //     destination: positionCartesian,
+      //   });
+      // }
     }
 
-    requestAnimationFrame(updateISSPointer);
+    for (let i = 0; i < totalSeconds; i += timestepInSeconds) {
+      const time = JulianDate.addSeconds(start, i, new JulianDate());
+      const jsDate = JulianDate.toDate(time);
+      const positionAndVelocity = satellite.propagate(satrec, jsDate);
+      const gmst = mod.gstime(
+        mod.jday(
+          jsDate.getUTCFullYear(),
+          jsDate.getUTCMonth() + 1, // Note, this function requires months in range 1-12.
+          jsDate.getUTCDate(),
+          jsDate.getUTCHours(),
+          jsDate.getUTCMinutes(),
+          jsDate.getUTCSeconds(),
+          jsDate.getUTCMilliseconds()
+        )
+      );
+      if (typeof positionAndVelocity.position === "boolean") return;
+      const p = mod.eci_to_geodetic(
+        new (mod.EciVec as any)(
+          positionAndVelocity.position.x,
+          positionAndVelocity.position.y,
+          positionAndVelocity.position.z
+        ),
+        gmst
+      );
+
+      const positionn = Cartesian3.fromDegrees(
+        mod.degrees_lon(p.longitude),
+        mod.degrees_lat(p.latitude),
+        p.height * 1000
+      );
+
+      positionsOverTime.addSample(time, positionn);
+    }
+    setPosition(positionsOverTime);
+
+    // function updateISSPointer() {
+    //   // setTimeout(() => {
+    //   if (issRef.current?.cesiumElement?.position) {
+    //     const position = calcPos(satrec, new Date())!;
+    //     issRef.current.cesiumElement.position = Cartesian3.fromDegrees(
+    //       mod.degrees_lon(position.longitude),
+    //       mod.degrees_lat(position.latitude),
+    //       position.height * 1000
+    //     ) as any;
+    //   }
+
+    //   requestAnimationFrame(updateISSPointer);
+    //   // }, 2000);
+    // }
+
+    // requestAnimationFrame(updateISSPointer);
   }, []);
 
+  useEffect(() => {
+    if (!location) return;
+
+    streetViewService.getPanorama(
+      {
+        location: {
+          lat: location?.latitude,
+          lng: location?.longitude,
+        },
+        preference: google.maps.StreetViewPreference.NEAREST,
+        radius: 1500,
+        source: google.maps.StreetViewSource.OUTDOOR,
+      },
+      (data, status) => setPanoData(data)
+    );
+  }, [location]);
+
   return (
-    <Viewer full ref={viewerRef}>
-      {/* <ImageryLayer
-        imageryProvider={
-          new ArcGisMapServerImageryProvider({
-            url: "//services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer",
-          })
-        }
-      /> */}
-      {location && (
-        <GeoJsonDataSource
-          data={{
-            type: "Feature",
-            geometry: {
-              type: "Point",
-              coordinates: [location?.longitude, location?.latitude],
-            },
-          }}
-          onLoad={(dataSource) => {
-            dataSource.entities.values.forEach((e) => {
-              // @ts-ignore
-              e.billboard = null;
-              // @ts-ignore
-              e.point = { color: Color.YELLOW, pixelSize: 10 };
-            });
-          }}
+    <div ref={containerRef}>
+      {streetViewOpen && (
+        <StreetView
+          containerRef={containerRef}
+          viewer={viewerRef}
+          panoData={panoData}
+          location={location}
+          start={start}
         />
       )}
-      {position && <ISS position={position} issRef={issRef} />}
-    </Viewer>
+      <Viewer
+        full
+        ref={viewerRef}
+        style={{ position: "relative", height: "100vh" }}
+      >
+        {location && (
+          <GeoJsonDataSource
+            data={{
+              type: "Feature",
+              geometry: {
+                type: "Point",
+                coordinates: [location?.longitude, location?.latitude],
+              },
+            }}
+            onLoad={(dataSource) => {
+              dataSource.entities.values.forEach((e) => {
+                // @ts-ignore
+                e.billboard = null;
+                // @ts-ignore
+                e.point = { color: Color.YELLOW, pixelSize: 10 };
+              });
+            }}
+          />
+        )}
+        {position && year && (
+          <ISS position={position} issRef={issRef} year={year} />
+        )}
+      </Viewer>
+      <Timeline
+        callback={(num) => {
+          console.log(num);
+          setYear(num);
+        }}
+      />
+    </div>
   );
 }
 
-function ISS({ position, issRef }: { position: Pos; issRef: RefObject<any> }) {
+function ISS({
+  position,
+  issRef,
+  year,
+}: {
+  position: SampledPositionProperty;
+  issRef: RefObject<any>;
+  year: number;
+}) {
+  const [show, setShow] = useState(false);
+  const [iss, setIss] = useState({
+    uri: "/iss.glb",
+    minimumPixelSize: 3400,
+    maximumScale: 8000,
+  });
+
+  useEffect(() => {
+    setIss(
+      year >= 1984 && year < 1997
+        ? {
+            uri: "/zaryafinal.gltf",
+            minimumPixelSize: 1700,
+            maximumScale: 80000,
+          }
+        : year >= 1997 && year < 2002
+        ? // ? {
+          //     uri: "/ISS_2016_PHASE1.glb",
+          //     minimumPixelSize: 5000,
+          //     maximumScale: 80000,
+          //   }
+          {
+            uri: "/zaryafinal.gltf",
+            minimumPixelSize: 1700,
+            maximumScale: 80000,
+          }
+        : year >= 2002 && year < 2007
+        ? // ? {
+          //     uri: "/ISS_2016_PHASE2.gltf",
+          //     minimumPixelSize: 5000,
+          //     maximumScale: 8000,
+          //   }
+          {
+            uri: "/iss.glb",
+            minimumPixelSize: 3400,
+            maximumScale: 8000,
+          }
+        : {
+            uri: "/iss.glb",
+            minimumPixelSize: 3400,
+            maximumScale: 8000,
+          }
+    );
+  }, [year]);
+
   return (
-    <Entity
-      name="iss"
-      ref={issRef}
-      position={Cartesian3.fromDegrees(
-        position?.longitude,
-        position?.latitude,
-        position.height * 1000
+    <>
+      {show && (
+        <div
+          style={{
+            padding: "14px 18px",
+            borderRadius: "15px",
+            position: "absolute",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-start",
+                fontFamily: "monospace",
+              }}
+            >
+              <span>{new Date().toDateString()}</span>
+            </div>
+            <span style={{ fontFamily: "monospace", fontSize: "24px" }}>
+              ISS {"("}Zarya{")"}
+            </span>
+            <div style={{ fontFamily: "monospace", fontSize: "20px" }}>
+              Lorem ipsum, dolor sit amet consectetur adipisicing elit. Aut
+              voluptatum sit veniam quo accusantium expedita, nisi nulla
+              quisquam minima aliquid.
+            </div>
+          </div>
+        </div>
       )}
-      model={{
-        uri: "/iss.glb",
-        // scale: 100,
-        minimumPixelSize: 256,
-        maximumScale: 5000,
-      }}
-      // point={{ pixelSize: 10 }}
-    >
-      test
-    </Entity>
+
+      <Entity
+        name="iss"
+        onClick={(e) => {
+          e.position;
+          setShow(true);
+          console.log(e);
+        }}
+        ref={issRef}
+        position={position}
+        model={iss}
+        path={{
+          leadTime: 1000,
+          trailTime: 1500,
+          width: 10,
+          resolution: 1,
+          material: new PolylineGlowMaterialProperty({
+            glowPower: 0.1,
+            color: Color.WHITE,
+            taperPower: 1,
+          }),
+        }}
+        // billboard={null}
+        // point={{ pixelSize: 10 }}
+        // point={{
+        //   pixelSize: 8,
+        //   color: Color.TRANSPARENT,
+        //   outlineColor: Color.YELLOW,
+        //   outlineWidth: 3,
+        // }}
+      />
+    </>
   );
 }
